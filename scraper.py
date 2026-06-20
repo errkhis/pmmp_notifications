@@ -75,13 +75,22 @@ def scrape_consultation(url: str) -> ConsultationData:
                 if lot_id in lot_estimates:
                     lot_data.estimated_price, lot_data.estimated_price_currency = lot_estimates[lot_id]
                 lots.append(lot_data)
-            data.lots = lots
-            if lots:
-                data.bidders = [bidder for lot in lots for bidder in lot.bidders]
+            _attach_lot_results(data, lots)
         elif "1" in lot_estimates:
             data.estimated_price, data.estimated_price_currency = lot_estimates["1"]
 
         return data
+
+
+def _attach_lot_results(data: ConsultationData, lots: list[ConsultationData]) -> None:
+    # Prado lot callbacks can occasionally return an empty replacement payload.
+    # When that happens, falling back to the base page is safer than treating all
+    # lots as empty and blocking notifications entirely.
+    non_empty_lots = [lot for lot in lots if lot.bidders]
+    if not non_empty_lots:
+        return
+    data.lots = non_empty_lots
+    data.bidders = [bidder for lot in non_empty_lots for bidder in lot.bidders]
 
 
 def consultation_meta_from_url(url: str) -> tuple[Optional[str], Optional[str]]:

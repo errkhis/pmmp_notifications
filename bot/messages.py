@@ -100,6 +100,8 @@ def notification_list_message(watches: list[BidWatch]) -> str:
         lines.append(f"• <b>{title}</b>")
         lines.append(f"  Link: <a href=\"{esc(watch.consultation_url)}\">Open consultation</a>")
         lines.append(f"  Last check: <b>{fmt_datetime(watch.last_checked_at)}</b>")
+        if watch.last_error:
+            lines.append(f"  Last error: <code>{esc(watch.last_error[:160])}</code>")
     return "\n".join(lines)
 
 

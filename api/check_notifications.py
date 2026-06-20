@@ -127,6 +127,8 @@ def run_notification_check() -> dict:
         "checked": len(watches),
         "notified": notified,
         "errors": errors,
+        "watch_ids": [watch.id for watch in watches],
+        "references": [watch.consultation_reference for watch in watches],
         "checked_at": now.isoformat() + "Z",
     }
 

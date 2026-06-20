@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from api.check_notifications import _has_complete_prices, _is_waiting_for_price
 from bot import handlers
-from scraper import Bidder, ConsultationData
+from scraper import Bidder, ConsultationData, _attach_lot_results
 
 
 class NotificationLogicTests(unittest.TestCase):
@@ -38,6 +38,49 @@ class NotificationLogicTests(unittest.TestCase):
             bidders=[Bidder(rank=1, name="A", admin_status="Écartée", financial_status="", price=None, price_before_raw="-", price_after_raw="")],
         )
         self.assertTrue(_has_complete_prices(data))
+
+    def test_attach_lot_results_keeps_base_data_when_all_lot_callbacks_are_empty(self):
+        base_bidder = Bidder(rank=1, name="Base", admin_status="Admissible", financial_status="", price=100.0)
+        data = ConsultationData(
+            reference="1",
+            object="x",
+            estimated_price=None,
+            estimated_price_currency="MAD",
+            procedure="p",
+            category="c",
+            bidders=[base_bidder],
+        )
+        lots = [
+            ConsultationData(reference="1", object="Lot 1", estimated_price=None, estimated_price_currency="MAD", procedure="p", category="c", bidders=[]),
+            ConsultationData(reference="1", object="Lot 2", estimated_price=None, estimated_price_currency="MAD", procedure="p", category="c", bidders=[]),
+        ]
+
+        _attach_lot_results(data, lots)
+
+        self.assertEqual(data.bidders, [base_bidder])
+        self.assertEqual(data.lots, [])
+
+    def test_attach_lot_results_uses_non_empty_lots(self):
+        data = ConsultationData(
+            reference="1",
+            object="x",
+            estimated_price=None,
+            estimated_price_currency="MAD",
+            procedure="p",
+            category="c",
+            bidders=[],
+        )
+        lot_bidder = Bidder(rank=1, name="Lot bidder", admin_status="Admissible", financial_status="", price=100.0)
+        lots = [
+            ConsultationData(reference="1", object="Lot 1", estimated_price=None, estimated_price_currency="MAD", procedure="p", category="c", bidders=[lot_bidder]),
+            ConsultationData(reference="1", object="Lot 2", estimated_price=None, estimated_price_currency="MAD", procedure="p", category="c", bidders=[]),
+        ]
+
+        _attach_lot_results(data, lots)
+
+        self.assertEqual(len(data.lots), 1)
+        self.assertEqual(data.lots[0].bidders, [lot_bidder])
+        self.assertEqual(data.bidders, [lot_bidder])
 
     @patch("bot.handlers.send")
     @patch("bot.handlers.watch_bid_result")

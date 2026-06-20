@@ -51,6 +51,7 @@ class BidWatch:
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     last_checked_at: Optional[datetime]
+    last_error: Optional[str] = None
 
 
 def _load_local_env() -> None:
@@ -315,7 +316,7 @@ def list_pending_bid_watches(telegram_id: int) -> list[BidWatch]:
             f"""
             SELECT id, telegram_id, consultation_reference, org_acronyme,
                 consultation_url, consultation_title, status, created_at, updated_at,
-                last_checked_at
+                last_checked_at, last_error
             FROM {WATCHES_TABLE}
             WHERE telegram_id = %s
               AND status = 'watching'
@@ -387,7 +388,7 @@ def claim_due_bid_watches(limit: int = 10) -> list[BidWatch]:
                 WHERE w.id = due.id
                 RETURNING w.id, w.telegram_id, w.consultation_reference,
                     w.org_acronyme, w.consultation_url, w.consultation_title,
-                    w.status, w.created_at, w.updated_at, w.last_checked_at
+                    w.status, w.created_at, w.updated_at, w.last_checked_at, w.last_error
                 """,
                 (limit,),
             ).fetchall()
@@ -457,4 +458,5 @@ def _row_to_bid_watch(row) -> BidWatch:
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
         last_checked_at=row.get("last_checked_at"),
+        last_error=row.get("last_error"),
     )
