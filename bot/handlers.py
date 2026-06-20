@@ -3,14 +3,12 @@ import os
 import re
 from typing import Any
 
-from api.check_notifications import _has_complete_prices
 from database import (
     can_create_bid_watch,
     DatabaseNotConfigured,
     count_users,
     grant_premium,
     list_pending_bid_watches,
-    mark_bid_watch_notified,
     set_free,
     stop_bid_watch,
     update_bid_watch_title,
@@ -27,7 +25,6 @@ from .messages import (
     help_message,
     notification_list_message,
     remove_watch_markup,
-    results_published_message,
     watch_created_message,
     welcome_message,
 )
@@ -180,17 +177,11 @@ def handle_watch_request(chat_id: int, message: dict[str, Any], url: str) -> Non
             send(chat_id, active_watch_limit_message(TELEGRAM_ADMIN_USERNAME))
             return
         title = None
-        consultation_data = None
         try:
-            consultation_data = scrape_consultation(url)
-            title = (consultation_data.object or "").strip() or None
+            title = (scrape_consultation(url).object or "").strip() or None
         except Exception:
             log.exception("Failed to fetch consultation title for watch %s", reference)
-        watch = watch_bid_result(user.telegram_id, build_consultation_url(reference, org or ""), reference, org or "", title)
-        if consultation_data and _has_complete_prices(consultation_data):
-            mark_bid_watch_notified(watch.id)
-            send(chat_id, results_published_message(watch))
-            return
+        watch_bid_result(user.telegram_id, build_consultation_url(reference, org or ""), reference, org or "", title)
         send(chat_id, watch_created_message(reference, title))
     except DatabaseNotConfigured:
         send(chat_id, database_error_message())
