@@ -1,3 +1,4 @@
+#
 from fastapi import FastAPI, Request
 
 from bot.handlers import process_update
